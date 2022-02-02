@@ -1,28 +1,39 @@
 <template>
-  <h1>我是App组件</h1>
-  <hr />
-  <HelloWorld 
-    @sayHello="sayHello"
-    msg="Hello Vue 3.0 + Vite" 
-    test="我是测试信息" />
+  <h1>watchEffect函数</h1>
+  <span>当前求和为: {{ sum }}</span>
+  <button @click="sum++">点我+1</button>
+  <p @click="message += '!'">{{ message }}</p>
+  
 </template>
 
 <script>
-import HelloWorld from "./components/HelloWorld.vue";
-
+import { ref, watch, reactive, watchEffect } from "vue";
 export default {
-  name: "App",
-  components: {
-    HelloWorld,
-  },
   setup() {
-    const sayHello = (params) => {
-      alert(`我是自定事件,我的参数是${params}`);
-    };
+    let sum = ref(0);
+    let message = ref("你好啊");
+    const person = reactive({
+      name: "王五",
+      age: 12,
+      job: {
+        Java: {
+          money: 20,
+        },
+      },
+    });
+
+    watchEffect(()=>{
+      const initSum = sum.value;
+      const age = person.age
+      console.log('相关的数据发生了变化');
+    })
 
     return {
-      sayHello,
+      sum,
+      message,
+      person,
     };
   },
 };
 </script>
+

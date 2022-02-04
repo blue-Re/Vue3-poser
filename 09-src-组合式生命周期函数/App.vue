@@ -1,7 +1,7 @@
 <template>
   <div>
-    <button @click="isShow = !isShow">展示/隐藏 组件</button>
     <HelloWorld v-if="isShow" />
+    <button @click="isShow = !isShow">展示/隐藏 组件</button>
   </div>
 </template>
 

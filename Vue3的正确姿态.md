@@ -381,3 +381,307 @@ export default {
 
 ```
 
+### 1.8 Vue3的生命周期函数
+
+在Vue3中，也可以使用Vue2的配置生命周期函数，也可以使用Vue3提供的组合式API生命周期函数
+
+Vue3.0也提供了 Composition API 形式的生命周期钩子，与Vue2.x中钩子对应关系如下：
+
+- `beforeCreate`===>`setup()`
+- `created`=======>`setup()`
+- `beforeMount` ===>`onBeforeMount`
+- `mounted`=======>`onMounted`
+- `beforeUpdate`===>`onBeforeUpdate`
+- `updated` =======>`onUpdated`
+- `beforeUnmount` ==>`onBeforeUnmount`
+- `unmounted` =====>`onUnmounted`
+
+注意：
+
+1. Vue2的每个配置生命周期函数执行时时机都比Vue3的组合式API执行慢一步
+2. 将`beforeCreate以及created`两个钩子函数柔和到`setup`当中
+
+```js
+<template>
+  <h1>我是HelloWorld组件</h1>
+  <span>当前求和为: {{ sum }}</span>
+  <button @click="sum++">点我+1</button>
+</template>
+
+<script>
+import {
+  onBeforeMount,
+  onBeforeUnmount,
+  onBeforeUpdate,
+  onMounted,
+  onUpdated,
+  onUnmounted,
+  ref,
+} from "vue";
+export default {
+  setup() {
+    let sum = ref(0);
+
+    // 组合式API的生命周期函数
+    console.log("setup------------");
+
+    onBeforeMount(() => {
+      console.log("onBeforeMount-------");
+    });
+
+    onMounted(() => {
+      console.log("onMounted---------");
+    });
+
+    onBeforeUpdate(() => {
+      console.log("onBeforeUpdate---------");
+    });
+
+    onUpdated(() => {
+      console.log("onUpdated-------");
+    });
+
+    onBeforeUnmount(() => {
+      console.log("onBeforeUnmount----");
+    });
+
+    onUnmounted(() => {
+      console.log("onUnmounted-----");
+    });
+
+    return {
+      sum,
+    };
+  },
+};
+</script>
+```
+
+### 1.9 自定义hooks函数，体会组合式API的优势
+
+将一个功能函数使用组合式API进行统一封装，其他模块只需要进行调用使用即可，不需要去在意函数内部的实现逻辑！
+
+`hooks文件夹下的usePoint.js函数`
+
+```js
+import { reactive, onMounted, onBeforeUnmount } from 'vue'
+
+export default function () {
+  const point = reactive({
+    x: 0,
+    y: 0,
+  });
+  /* 获取鼠标焦点的自定义hooks函数 */
+  function getPointPosition(event) {
+    point.x = event.pageX;
+    point.y = event.pageY;
+    console.log(point.x, point.y);
+  }
+
+  onMounted(() => {
+    window.addEventListener("click", getPointPosition);
+  });
+
+  onBeforeUnmount(() => {
+    window.removeEventListener("click", getPointPosition);
+  });
+  // 将坐标对象交出去，让其他模块可以使用该模块的功能
+  return point
+}
+```
+
+`HelloWorld组件`
+
+```js
+<template>
+  <h1>我是HelloWorld组件</h1>
+  <h2>自定义获取鼠标坐标hooks函数</h2>
+  <span>
+    x的坐标: {{ point.x }}
+    <br />
+    y的坐标: {{ point.y }}
+  </span>
+</template>
+
+<script>
+import { ref } from "vue";
+import getPointHooks from '../hooks/usePoint'
+export default {
+  setup() {
+    let sum = ref(0);
+    // 获取自定义模块的hooks函数
+    let point = getPointHooks()
+
+    return {
+      sum,
+      point,
+    };
+  },
+};
+</script>
+
+```
+
+`App组件`
+
+```js
+<template>
+  <div>
+    <button @click="isShow = !isShow">展示/隐藏 组件</button>
+    <HelloWorld v-if="isShow" />
+  </div>
+</template>
+
+<script>
+import { ref } from "vue";
+import HelloWorld from "./components/HelloWorld.vue";
+export default {
+  components: { HelloWorld },
+  setup() {
+    let sum = ref(0);
+    let isShow = ref(true);
+    return {
+      sum,
+      isShow,
+    };
+  },
+};
+</script>
+```
+
+### 1.10 toRef与toRefs的使用
+
+- 作用：创建一个 ref 对象，其value值指向另一个对象中的某个属性。
+- 语法：```const name = toRef(person,'name')```
+- 应用:   要将响应式对象中的某个属性单独提供给外部使用时。
+
+
+- 扩展：```toRefs``` 与```toRef```功能一致，但可以批量创建多个 ref 对象，语法：```toRefs(person)```
+
+```js
+<template>
+  <h1>我是HelloWorld组件</h1>
+  <h2>toRef与toRefs</h2>
+
+  <h3>{{ person }}</h3>
+  <p>{{ person.username }}</p>
+  <p>{{ person.password }}</p>
+  <br />
+  <p>{{ person.job.name }}</p>
+  <p>{{ person.job.salary }}k</p>
+  <button @click="changeInfo()">修改信息</button>
+  <hr />
+  <h1>使用toRef交出去的属性</h1>
+  <p>用户名： {{ name }}</p>
+  <p>密码： {{ password }}</p>
+</template>
+
+<script>
+import { ref, reactive, toRef, toRefs } from "vue";
+export default {
+  setup() {
+    let sum = ref(0);
+    const person = reactive({
+      username: "zhangsan",
+      password: "999",
+      job: {
+        name: "Web前端",
+        salary: 30,
+      },
+    });
+    const changeInfo = () => {
+      person.username = "aaaaaaaa";
+      person.password = '111111111111111111111'
+      person.job.name = "Java开发";
+      person.job.salary++;
+    };
+
+    // toRef的使用 想把person身上的某个单个属性单独交出去使用
+    const name = toRef(person, "username");
+    const password = toRef(person, "password");
+
+    return {
+      sum,
+      person,
+      changeInfo,
+      name,
+      password,
+      // toRefs的使用 把person身上的所有属性全部交出去
+      ...toRefs(person)
+    };
+  },
+};
+</script>
+
+```
+
+## 二、其他不常用CompositionAPI
+
+### 2.1 shallowReactive 与 shallowRef
+
+- shallowReactive：只处理对象最外层属性的响应式（浅响应式）。
+- shallowRef：只处理基本数据类型的响应式, 不进行对象的响应式处理。
+
+- 什么时候使用?
+  -  如果有一个对象数据，结构比较深, 但变化时只是外层属性变化 ===> shallowReactive。
+  -  如果有一个对象数据，后续功能不会修改该对象中的属性，而是生新的对象来替换 ===> shallowRef。
+
+```js
+<template>
+  <h1>我是HelloWorld组件</h1>
+  <h2>shallowReactive 与 shallowRef</h2>
+
+  <h3>{{ person }}</h3>
+  <p>{{ person.username }}</p>
+  <p>{{ person.password }}</p>
+  <p>{{ person.age }}</p>
+  <button @click="person.age++">修改年龄</button>
+  <br />
+  <p>{{ person.job.name }}</p>
+  <p>{{ person.job.salary }}k</p>
+  <button @click="person.job.salary++">修改薪资</button>
+  <button @click="changeInfo()">修改信息</button>
+  <hr>
+  <h1>被shallowRef修饰后得对象</h1>
+  <p>{{person2.age}}</p>
+  <button @click="person2={age: 8}">修改person2的年龄</button>
+</template>
+
+<script>
+import { ref, reactive, toRef, toRefs, shallowReactive,shallowRef } from "vue";
+export default {
+  setup() {
+    let sum = ref(0);
+    const person = shallowReactive({
+      username: "zhangsan",
+      password: "999",
+      age:1,
+      job: {
+        name: "Web前端",
+        salary: 30,
+      },
+    });
+    /* 使用shallowRef去修饰另一个对象 */
+    const person2 = shallowRef({
+      age:1
+    })
+
+    const changeInfo = () => {
+      person.username = "aaaaaaaa";
+      person.password = '111111111111111111111'
+      person.job.name = "Java开发";
+      person.job.salary++;
+    };
+
+    return {
+      sum,
+      person,
+      person2,
+      changeInfo,
+    };
+  },
+};
+</script>
+
+```
+

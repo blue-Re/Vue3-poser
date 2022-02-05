@@ -1,22 +1,29 @@
 <template>
-  <div>
-    <button @click="isShow = !isShow">展示/隐藏 组件</button>
-    <HelloWorld v-if="isShow" />
+  <div class="root">
+    <h1>我是根组件</h1>
+    <li v-for="item in games">{{item}}</li>
+    <Child />
   </div>
 </template>
 
 <script>
-import { ref } from "vue";
-import HelloWorld from "./components/HelloWorld.vue";
+import Child from "./components/Child.vue";
+import { provide } from "vue";
 export default {
-  components: { HelloWorld },
+  components: { Child },
   setup() {
-    let sum = ref(0);
-    let isShow = ref(true);
+    let games = ["LOL", "CF", "DNF"];
+    provide('games', games)
     return {
-      sum,
-      isShow,
+      games,
     };
   },
 };
 </script>
+
+<style>
+.root {
+  background-color: skyblue;
+  padding: 20px;
+}
+</style>

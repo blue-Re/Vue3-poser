@@ -663,15 +663,7 @@ export default {
     });
     /* 使用shallowRef去修饰另一个对象 */
     const person2 = shallowRef({
-      age:1
-    })
-
-    const changeInfo = () => {
-      person.username = "aaaaaaaa";
-      person.password = '111111111111111111111'
-      person.job.name = "Java开发";
-      person.job.salary++;
-    };
+      age:donlyzRead
 
     return {
       sum,
@@ -684,4 +676,377 @@ export default {
 </script>
 
 ```
+
+### 2.2 readonly与shallowReadonly
+
+- readonly：让一个响应式数据变为只读数据（深只读，嵌套的深层次数据不可以被修改）
+- shallowReadonly：让一个响应式数据变为只读的（浅只读，嵌套的深层次数据可以被修改，第一层数据不可以被修改）
+
+==当数据不希望被修改时可以用其来阻止修改行为==
+
+```js
+<template>
+  <h1>我是HelloWorld组件</h1>
+  <h2>shallowReactive 与 shallowRef</h2>
+
+  <h3>{{ person }}</h3>
+  <p>{{ person.username }}</p>
+  <p>{{ person.password }}</p>
+  <p>{{ person.age }}</p>
+  <button @click="person.age++">修改年龄</button>
+  <br />
+  <p>{{ person.job.name }}</p>
+  <p>{{ person.job.salary }}k</p>
+  <button @click="person.job.salary++">修改薪资</button>
+  <button @click="changeInfo()">修改信息</button>
+  <hr>
+</template>
+
+<script>
+import { ref, reactive, toRef, toRefs, shallowReactive,shallowRef, readonly, shallowReadonly } from "vue";
+export default {
+  setup() {
+    let sum = ref(0);
+    let person = shallowReactive({
+      username: "zhangsan",
+      password: "999",
+      age:1,
+      job: {
+        name: "Web前端",
+        salary: 30,
+      },
+    });
+    /* 使用readonly标记响应式数据只是可读的 */
+    // person = readonly(person)
+
+    // 使用shallowReadonly来标记数据
+    person = shallowReadonly(person)
+
+    const changeInfo = () => {
+      person.username = "aaaaaaaa";
+      person.password = '111111111111111111111'
+      person.job.name = "Java开发";
+      person.job.salary++;
+    };
+
+    return {
+      sum,
+      person,
+      changeInfo,
+    };
+  },
+};
+</script>
+
+```
+
+### 2.3 toRaw与markRaw
+
+- toRaw 将一个有`reactive`标记的响应式对象转变成一个普通对象，简单讲就是使这个对象丢失掉响应式
+
+  ==用于：需要数据改变，但不引起页面更新的需求==
+
+- markRaw：标记一个对象，让其永远不会变为响应式对象
+
+  ==有时需要我们给特定的响应式对象身上添加某个属性，但是不希望他是响应式的，所以就需要用到这个==
+
+  ```js
+  <template>
+    <h1>我是HelloWorld组件</h1>
+    <h2>shallowReactive 与 shallowRef</h2>
+  
+    <h3>{{ person }}</h3>
+    <p>{{ person.username }}</p>
+    <p>{{ person.password }}</p>
+    <p>{{ person.age }}</p>
+    <button @click="person.age++">修改年龄</button>
+    <br />
+    <p>{{ person.job.name }}</p>
+    <p>{{ person.job.salary }}k</p>
+    <p v-show="person.car">{{ person.car }}</p>
+    <button @click="person.job.salary++">修改薪资</button>
+    <button @click="changeInfo()">修改信息</button>
+    <button @click="changeRawObj">将响应式对象变为原始对象</button>
+    <button @click="addCar">添加一辆车</button>
+    <button @click="person.car.name += '~'">修改车的名字</button>
+    <hr />
+  </template>
+  
+  <script>
+  import {
+    ref,
+    toRaw,
+    shallowReactive,
+    shallowRef,
+    readonly,
+    shallowReadonly,
+    markRaw,
+  } from "vue";
+  export default {
+    setup() {
+      let sum = ref(0);
+      let person = shallowReactive({
+        username: "zhangsan",
+        password: "999",
+        age: 1,
+        job: {
+          name: "Web前端",
+          salary: 30,
+        },
+      });
+  
+      const changeInfo = () => {
+        person.username = "aaaaaaaa";
+        person.password = "111111111111111111111";
+        person.job.name = "Java开发";
+        person.job.salary++;
+      };
+      const changeRawObj = () => {
+        // 将reactive定义的响应式对象变为原始对象
+        const rawObj = toRaw(person);
+        console.log(rawObj);
+      };
+      const addCar = () => {
+        let car = markRaw({
+          name: "宝马",
+          price: "30w",
+        });
+        person.car = car;
+      };
+      return {
+        sum,
+        person,
+        changeInfo,
+        addCar,
+        changeRawObj,
+      };
+    },
+  };
+  </script>
+  
+  ```
+
+  ### 2.4 customRef
+  
+  创建一个自定义的ref，对其依赖项进行跟踪和触发进行控制
+  
+  ```js
+  <template>
+    <h1>自定义Ref</h1>
+    <input v-model="keyWord" /> <br />
+    <span>{{ keyWord }}</span>
+  </template>
+  
+  <script>
+  import { customRef } from 'vue'
+  export default {
+    setup() {
+      function myRef(value, delay) {
+        let timer;
+        return customRef((track, trigger)=>{
+          return {
+            get(){
+              console.log(`有人从myRef这个容器中读取数据了，值为${value}`);
+              // track函数用于 追踪 value 值的改变
+              track();
+              return value
+            },
+  
+            set(newValue){
+              console.log(`myRef容器的数据被修改了,值为${newValue}`);
+              clearTimeout(timer)
+              timer = setTimeout(()=>{
+                value = newValue;
+                // 通知Vue去重新解析模板
+                trigger()
+              }, delay)
+            }
+          }
+        })
+      }
+      
+      let keyWord = myRef("HelloWorld", 10);
+  
+  
+      return {
+        keyWord,
+      };
+    },
+  };
+  </script>
+  
+  ```
+  
+  
+
+### 2.4 provide与inject
+
+使用`provide与inject`来实现根组件与后代组件的通信，当然子组件也可以获取到provide所提供的数据，我们一般直接使用props就可以了
+
+```
+父组件:
+provide('通信名', 通信数据)
+
+子组件
+const data = inject('通信名')
+```
+
+### 2.5 响应式数据的判断
+
+- isRef: 检查一个值是否为一个 ref 对象
+- isReactive: 检查一个对象是否是由 `reactive` 创建的响应式代理
+- isReadonly: 检查一个对象是否是由 `readonly` 创建的只读代理
+- isProxy: 检查一个对象是否是由 `reactive` 或者 `readonly` 方法创建的代理
+
+## 三、新的组件
+
+### 3.1Fragment
+
+- 在Vue2中: 组件必须有一个根标签
+- 在Vue3中: 组件可以没有根标签, 内部会将多个标签包含在一个Fragment虚拟元素中
+- 好处: 减少标签层级, 减小内存占用
+
+### 3.2 Teleport
+
+- 什么是Teleport？—— `Teleport` 是一种能够将我们的<strong style="color:#DD5145">组件html结构</strong>移动到指定位置的技术。
+
+  ```vue
+  <teleport to="移动位置"> // to="body | html | div| #box ..."
+  	<div v-if="isShow" class="mask">
+  		<div class="dialog">
+  			<h3>我是一个弹窗</h3>
+  			<button @click="isShow = false">关闭弹窗</button>
+  		</div>
+  	</div>
+  </teleport>
+  ```
+
+  
+
+### 3.3 Suspense
+
+- 等待异步组件时渲染一些额外内容，让应用有更好的用户体验
+
+- 使用步骤：
+
+  - 异步引入组件
+
+    ```js
+    import {defineAsyncComponent} from 'vue'
+    const Child = defineAsyncComponent(()=>import('./components/Child.vue'))
+    ```
+
+  - 使用```Suspense```包裹组件，并配置好```default``` 与 ```fallback```
+
+    ```vue
+    <template>
+    	<div class="app">
+    		<h3>我是App组件</h3>
+    		<Suspense>
+    			<template v-slot:default>
+    				<Child/>
+    			</template>
+    			<template v-slot:fallback>
+    				<h3>加载中.....</h3>
+    			</template>
+    		</Suspense>
+    	</div>
+    </template>
+    ```
+
+## 四、其他
+
+### 4.1 全局API的转移
+
+- Vue 2.x 有许多全局 API 和配置。
+
+  - 例如：注册全局组件、注册全局指令等。
+
+    ```js
+    //注册全局组件
+    Vue.component('MyButton', {
+      data: () => ({
+        count: 0
+      }),
+      template: '<button @click="count++">Clicked {{ count }} times.</button>'
+    })
+    
+    //注册全局指令
+    Vue.directive('focus', {
+      inserted: el => el.focus()
+    }
+    ```
+
+- Vue3.0中对这些API做出了调整：
+
+  - 将全局的API，即：```Vue.xxx```调整到应用实例（```app```）上
+
+    | 2.x 全局 API（```Vue```） | 3.x 实例 API (`app`)                        |
+    | ------------------------- | ------------------------------------------- |
+    | Vue.config.xxxx           | app.config.xxxx                             |
+    | Vue.config.productionTip  | <strong style="color:#DD5145">移除</strong> |
+    | Vue.component             | app.component                               |
+    | Vue.directive             | app.directive                               |
+    | Vue.mixin                 | app.mixin                                   |
+    | Vue.use                   | app.use                                     |
+    | Vue.prototype             | app.config.globalProperties                 |
+
+### 4.2 其他改变
+
+- data选项应始终被声明为一个函数。
+
+- 过度类名的更改：
+
+  - Vue2.x写法
+
+    ```css
+    .v-enter,
+    .v-leave-to {
+      opacity: 0;
+    }
+    .v-leave,
+    .v-enter-to {
+      opacity: 1;
+    }
+    ```
+
+  - Vue3.x写法
+
+    ```css
+    .v-enter-from,
+    .v-leave-to {
+      opacity: 0;
+    }
+    
+    .v-leave-from,
+    .v-enter-to {
+      opacity: 1;
+    }
+    ```
+
+- <strong style="color:#DD5145">移除</strong>keyCode作为 v-on 的修饰符，同时也不再支持```config.keyCodes```
+
+- <strong style="color:#DD5145">移除</strong>```v-on.native```修饰符
+
+  - 父组件中绑定事件
+
+    ```vue
+    <my-component
+      v-on:close="handleComponentEvent"
+      v-on:click="handleNativeClickEvent"
+    />
+    ```
+
+  - 子组件中声明自定义事件
+
+    ```vue
+    <script>
+      export default {
+        emits: ['close']
+      }
+    </script>
+    ```
+
+
+## 五、在Vue3中集成TS
 

@@ -13,17 +13,14 @@
   <button @click="person.job.salary++">修改薪资</button>
   <button @click="changeInfo()">修改信息</button>
   <hr>
-  <h1>被shallowRef修饰后得对象</h1>
-  <p>{{person2.age}}</p>
-  <button @click="person2={age: 8}">修改person2的年龄</button>
 </template>
 
 <script>
-import { ref, reactive, toRef, toRefs, shallowReactive,shallowRef } from "vue";
+import { ref, reactive, toRef, toRefs, shallowReactive,shallowRef, readonly, shallowReadonly } from "vue";
 export default {
   setup() {
     let sum = ref(0);
-    const person = shallowReactive({
+    let person = shallowReactive({
       username: "zhangsan",
       password: "999",
       age:1,
@@ -32,10 +29,11 @@ export default {
         salary: 30,
       },
     });
-    /* 使用shallowRef去修饰另一个对象 */
-    const person2 = shallowRef({
-      age:1
-    })
+    /* 使用readonly标记响应式数据只是可读的 */
+    // person = readonly(person)
+
+    // 使用shallowReadonly来标记数据
+    person = shallowReadonly(person)
 
     const changeInfo = () => {
       person.username = "aaaaaaaa";
@@ -47,7 +45,6 @@ export default {
     return {
       sum,
       person,
-      person2,
       changeInfo,
     };
   },

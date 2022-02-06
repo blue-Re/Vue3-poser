@@ -1050,3 +1050,291 @@ const data = inject('通信名')
 
 ## 五、在Vue3中集成TS
 
+首先，在Vue3中集成TS后，对应的组件写法如下
+
+```
+<template>
+
+</template>
+
+<script lang="ts">
+// 需要引入 defineComponent 来定义组件 对组件中数据的类型进行限制
+import {defineComponent} from 'vue'
+
+export default defineComponent({
+  name:''
+  
+})
+</script>
+```
+
+### 5.1 初次集成TS
+
+```vue
+<template>
+  <hr />
+  <h2>我是HelloWorld组件</h2>
+  <hr />
+  <div>{{ msg }}</div>
+  <button @click="changeMsg()">修改数据</button>
+  <div>{{ newsData }}</div>
+  <div>{{newsData2}}</div>
+  <div>计算属性: {{newMsg}}</div>
+  <hr />
+  <p>setup的数据</p>
+  <div>{{ new2 }}</div>
+  <button @click="changeMsg2()">修改new2的数据</button>
+</template>
+
+<script lang="ts">
+import { defineComponent, reactive } from "vue";
+
+const msg = "我是一个类型校验的数据";
+
+interface News {
+  title: string;
+  id: number;
+  desc: string;
+  content?: string;
+}
+// 第一种写法
+let newsData: News = {
+  title: "消息1",
+  id: 1,
+  desc: "我是消息1",
+};
+
+
+export default defineComponent({
+  name: "HelloWorld.vue",
+  data() {
+    return {
+      msg,
+      newsData,
+      // 第二种写法
+      newsData2: {
+        title: "消息2",
+        id: 2,
+        desc: "我是消息2",
+      } as News,
+    };
+  },
+  methods: {
+    changeMsg(): void {
+      this.msg = "修改后的数据";
+    },
+  },
+  computed: {
+    newMsg(): string {
+      return this.msg.split("").reverse().join("")
+    }
+  },
+  setup() {
+    let new2: News = reactive({
+      title: "消息1",
+      id: 1,
+      desc: "我是消息1",
+      content: "今日事今日毕",
+    });
+    function changeMsg2(): void {
+      new2.title += "!";
+      new2.id += 1;
+    }
+    return {
+      new2,
+      changeMsg2,
+    };
+  },
+});
+</script>
+
+```
+
+### 5.2 在Composition API中 集成TS
+
+```vue
+<template>
+  <hr />
+  <h2>我是HelloWorld组件</h2>
+  <h3>在Vue3中Composition API 集成TS</h3>
+  <p>姓名： {{ username }}</p>
+  <p>年龄： {{ age }}</p>
+  <button @click="setUserName('aaaaaaaa')">换名字</button>
+  <p>读年龄： {{ getUserName() }}</p>
+  <hr />
+  <p>校验ref数据类型：{{ count }}</p>
+  <p>计算属性： {{reverseName}}</p>
+</template>
+
+<script lang="ts">
+import { computed, defineComponent, reactive, ref, toRefs } from "vue";
+
+interface User {
+  username: string;
+  age: number | string;
+  setUserName(username: string): void;
+  getUserName(): string;
+}
+
+export default defineComponent({
+  name: "HelloWorld.vue",
+  setup() {
+    /* 类型校验的第一种写法 */
+    /* const user: User = reactive({
+      username: "张三",
+      age: 10,
+      getUserName(): string {
+        return this.username;
+      },
+      setUserName(usesrname: string): void {
+        this.username = usesrname;
+      }
+    }); */
+    /* 类型校验的第二种写法 */
+    /* const user = reactive<User>({
+      username: "张三",
+      age: 10,
+      getUserName(): string {
+        return this.username;
+      },
+      setUserName(usesrname: string): void {
+        this.username = usesrname;
+      }
+    }); */
+    /* 类型校验的第三种写法 */
+    const user = reactive({
+      username: "张三",
+      age: 10,
+      getUserName(): string {
+        return this.username;
+      },
+      setUserName(usesrname: string): void {
+        this.username = usesrname;
+      },
+    }) as User;
+    console.log(toRefs(user));
+
+    /* 校验 ref 数据类型 */
+    // let count: string = ref('22'); // Type 'Ref<string>' is not assignable to type 'string'.
+    let count = ref<number | string>("22");
+
+    /* 测试计算属性 */
+    let reverseName = computed((): string => {
+      return user.username.split("").reverse().join("");
+    });
+    console.log(reverseName);
+    
+    return {
+      ...toRefs(user),
+      count,
+      reverseName,
+    };
+  },
+});
+</script>
+
+```
+
+### 5.3 在Composition中使用Vuex
+
+`store.ts`
+
+```ts
+import { createStore } from 'vuex'
+
+export default createStore({
+  state: {
+    count: 0
+  },
+  mutations: {
+    changeCount(state,payload) {
+      // state.count++
+      state.count = payload
+    }
+  },
+  actions: {
+    asyncChangeCount({commit}, payload) {
+      setTimeout(()=>{
+        commit('changeCount', payload)
+      },1000)
+    }
+  },
+  getters: {
+    countGetter(state){
+      return state.count * 10;
+    },
+  },
+  modules: {
+  }
+})
+
+```
+
+`app.vue`
+
+在组合式API中要想访问Vuex需要借助 `useStore`
+
+```vue
+<template>
+  <h1>我是App根组件</h1>
+  <h2>在Vuex中集成TS</h2>
+  <p>当前count为：{{count}}</p>
+  <button @click="changeCount()">更改Vuex中的count</button>
+  <hr>
+  <p>getters: {{countGetters}}</p>
+</template>
+
+<script lang="ts">
+
+import { defineComponent, computed } from "vue";
+import { useStore } from 'vuex';
+
+
+export default defineComponent({
+  name: "App.vue",
+  setup() {
+    const store = useStore()
+    let count = computed(()=>{
+      return store.state.count
+    })
+    const changeCount = ()=>{
+      // store.commit('changeCount')
+      store.dispatch('asyncChangeCount', 20)
+    }
+    const countGetters = computed(()=>{
+      return store.getters.countGetter
+    })
+    return {
+      count,
+      changeCount,
+      countGetters
+    }
+  }
+});
+</script>
+
+<style lang="less">
+#app {
+  font-family: Avenir, Helvetica, Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-align: center;
+  color: #2c3e50;
+}
+
+#nav {
+  padding: 30px;
+
+  a {
+    font-weight: bold;
+    color: #2c3e50;
+
+    &.router-link-exact-active {
+      color: #42b983;
+    }
+  }
+}
+</style>
+
+```
+

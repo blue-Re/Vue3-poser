@@ -1070,7 +1070,7 @@ export default defineComponent({
 
 ### 5.1 初次集成TS
 
-```vue
+```js
 <template>
   <hr />
   <h2>我是HelloWorld组件</h2>
@@ -1152,7 +1152,7 @@ export default defineComponent({
 
 ### 5.2 在Composition API中 集成TS
 
-```vue
+```js
 <template>
   <hr />
   <h2>我是HelloWorld组件</h2>
@@ -1239,7 +1239,7 @@ export default defineComponent({
 
 `store.ts`
 
-```ts
+```js
 import { createStore } from 'vuex'
 
 export default createStore({
@@ -1274,7 +1274,7 @@ export default createStore({
 
 在组合式API中要想访问Vuex需要借助 `useStore`
 
-```vue
+```js
 <template>
   <h1>我是App根组件</h1>
   <h2>在Vuex中集成TS</h2>
@@ -1333,6 +1333,92 @@ export default defineComponent({
       color: #42b983;
     }
   }
+}
+</style>
+
+```
+
+## 六、setup的语法糖
+
+当我们在使用`setup`的语法糖时，需要在`script`标签内部加上`setup`就可以了，使用了语法糖的形式，默认script标签内部自动认为使用了setup，而且不用自己去写`return`,所定义的属性和方法自动返回，而且导入的组件无需去注册，直接在模板使用即可。
+
+`Son.vue`
+
+```js
+<template>
+  <div class="son">
+    <h1>我是孙组件</h1>
+    <ul>
+      根组件传过来的数据为
+      <li v-for="item in games">{{ item }}</li>
+    </ul>
+    <hr />
+    <Test />
+    <p>{{ count }}</p>
+    <button @click="add">点我+1</button>
+    <hr>
+    <p>父组件的props：{{props}}</p>
+    <button @click="handleClick">发射</button>
+  </div>
+</template>
+
+<script setup>
+import { inject, ref, defineProps,defineEmits } from "vue";
+import Test from "./Test.vue";
+const games = inject("games");
+const count = ref(0);
+// 暴露方法
+const add = () => {
+  count.value++;
+};
+
+// 获取props
+const props = defineProps(['game', 'food'])
+// 获取emit
+const emits = defineEmits(['myEmit'])
+const handleClick = ()=> {
+  emits('myEmit',{name: '我时发射的事件', data: '我时携带的数据',msg: '点了我'})
+}
+</script>
+
+<style>
+.son {
+  background-color: pink;
+  padding: 20px;
+}
+</style>
+
+```
+
+`Child.vue`
+
+```js
+<template>
+  <div class="child">
+    <h1>我是子组件</h1>
+    <Son food="123" game="lol"  @myEmit="handleClick"/>
+  </div>
+</template>
+
+<script>
+import Son from "./Son.vue";
+export default {
+  components: { Son },
+  setup() {
+    const handleClick = (data)=>{
+      console.log('自定义事件', data);
+    }
+    return {
+      handleClick
+    }
+  }
+};
+</script>
+
+<style>
+.child {
+  background-color: orange;
+  padding: 20px;
 }
 </style>
 
